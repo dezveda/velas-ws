@@ -1,4 +1,4 @@
-# Dezvelas (Velas Engine)
+# VELAS-ws (Velas Engine)
 
 An ultra-low latency (<10ms Tape-to-Glass) unified candlestick & Order Flow rendering engine built in Python with PyQt6 and Win32 low-level system optimizations.
 
@@ -6,7 +6,7 @@ An ultra-low latency (<10ms Tape-to-Glass) unified candlestick & Order Flow rend
 
 ## Overview
 
-**Dezvelas** is a high-performance, real-time market data visualizer and Order Flow trading overlay. Designed for cryptocurrency markets (Bybit Linear Perps), it provides sub-millisecond timer resolution, hardware-accelerated rendering synchronized with DWM VBlank, multiplexed WebSocket feeds for high availability, and advanced order flow analytics including Footprint charts, Session Volume Profiles, Delta Divergences, Open Interest dynamics, and Absorption detection.
+**Velas-ws** is a high-performance, real-time market data visualizer and Order Flow trading overlay. Designed for cryptocurrency markets (Bybit Linear Perps), it provides sub-millisecond timer resolution, hardware-accelerated rendering synchronized with DWM VBlank, multiplexed WebSocket feeds for high availability, and advanced order flow analytics including Footprint charts, Session Volume Profiles, Delta Divergences, Open Interest dynamics, and Absorption detection.
 
 ---
 
