@@ -1,12 +1,12 @@
 # VELAS-ws (Velas Engine v16)
 
-An ultra-low latency (<10ms Tape-to-Glass) unified candlestick & Order Flow rendering engine built in Python with PyQt6 and Win32 low-level system optimizations.
+An ultra-low latency unified candlestick & Order Flow rendering engine with sub-millisecond OS timers, VBlank-synced pacing, and wire-latency measurement, built in Python with PyQt6 and Win32 low-level system optimizations.
 
 ---
 
 ## Overview
 
-**VELAS-ws** is a high-performance, real-time market data visualizer and Order Flow trading overlay. Designed for cryptocurrency markets (Bybit Linear Perps), it provides sub-millisecond timer resolution, DWM VBlank-synchronized rendering, multiplexed WebSocket feeds for high availability, and advanced order flow analytics including Footprint charts, Session Volume Profiles, Delta Divergences, Open Interest dynamics, and Absorption detection.
+**VELAS-ws** is a high-performance, real-time market data visualizer and Order Flow visualization overlay. Designed for cryptocurrency markets (Bybit Linear Perps), it provides sub-millisecond timer resolution, DWM VBlank-synchronized rendering, multiplexed WebSocket feeds for high availability, and advanced order flow analytics including Footprint charts, Session Volume Profiles, Delta Divergences, Open Interest dynamics, and Absorption detection.
 
 ---
 
@@ -58,7 +58,7 @@ pip install PyQt6 websocket-client orjson
 - **Session Volume Profile**: Live calculation of VPOC (Volume Point of Control), VAH (Value Area High), and VAL (Value Area Low) using a 70% Value Area threshold.
 - **CVD & Delta Divergence Detection**: Real-time Cumulative Volume Delta tracking with bullish/bearish divergence identification.
 - **Open Interest (OI) Analysis**: Live classification into Long/Short Build-up, Unwinding, and Covering regimes.
-- **Absorption Detection**: Highlighting aggressive order absorption on Ask/Bid levels in real-time for trade sizes above threshold.
+- **Absorption Detection**: Real-time absorption flag in telemetry panel when trade size exceeds threshold (10.0 units).
 - **Market Kinetic Energy (KE)**: Kinetic energy modeling affecting candle opacity, morphing, and sparkline transitions based on volatility.
 
 ### 🎨 Visuals & Customization
