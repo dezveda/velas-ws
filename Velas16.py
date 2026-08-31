@@ -40,7 +40,7 @@ Consolidación Quirúrgica Completa (Velas8 + Velas9 + Taperead10 + Velas10/11):
 
   [Módulos de Order Flow Seleccionados (Rondas 1, 2 y 3)]
   - Footprint Charting: Micro-estructura Buy/Sell por nivel de precio dentro de la vela.
-  - Perfil de Volumen de Sesión: Cálculo dinámico de VPOC (Point of Control), VAH y VAL (70% Value Area).
+  - Perfil de Volumen de Rango Visible (Visible Range Volume Profile): Cálculo dinámico de VPOC (Point of Control), VAH y VAL (70% Value Area).
   - Detector de Divergencias Delta (CVD): Identificación en tiempo real de divergencias alcistas/bajistas.
   - Panel de Open Interest (OI) & Cuadrantes: Clasificación en vivo de Long/Short Build-up/Unwinding/Covering.
   - Detección de Absorción: indicador de absorción en panel de telemetría para trades superiores al umbral (10.0 unidades).
@@ -356,7 +356,7 @@ class ConfigDialog(QDialog):
 
         self.check_footprint = QCheckBox("Enable Footprint Levels")
         self.check_footprint.setChecked(True)
-        self.check_profile = QCheckBox("Enable Session Volume Profile (VPOC/VAH/VAL)")
+        self.check_profile = QCheckBox("Enable Visible Range Volume Profile (VPOC/VAH/VAL)")
         self.check_profile.setChecked(True)
         layout.addWidget(self.check_footprint)
         layout.addWidget(self.check_profile)
@@ -506,6 +506,7 @@ class BybitRedundantMarketDataThread(QThread):
         self.bybit_interval = BYBIT_INTERVAL_MAP.get(timeframe, "5")
         self.ring_buffer = ring_buffer
         self.running = True
+        self._force_reconnect = False
 
         self.ws_primary = None
         self.ws_mirror = None
@@ -595,9 +596,16 @@ class BybitRedundantMarketDataThread(QThread):
             self.last_kline_ts = -1
             self.last_ticker_ts = -1
             self.last_trade_id = ""
+            self._force_reconnect = True
         with self.feed_stats_lock:
             self._reactivate_standby_locked()
         self._fetch_history()
+
+        # Force active WebSockets to close so worker threads re-subscribe to the new symbol/timeframe
+        for ws in (self.ws_primary, self.ws_mirror):
+            if ws:
+                try: ws.close()
+                except Exception: pass
 
     def _fetch_history(self):
         ctx = ssl.create_default_context()
@@ -720,6 +728,7 @@ class BybitRedundantMarketDataThread(QThread):
                 ws.send(sub_msg)
                 self.connection_status.emit(True)
                 backoff = 1.0
+                self._force_reconnect = False
 
                 last_ping = time.time()
                 while self.running:
@@ -758,10 +767,18 @@ class BybitRedundantMarketDataThread(QThread):
                 if ws:
                     try: ws.close()
                     except Exception: pass
+                if source_tag == "primary" and self.ws_primary is ws:
+                    self.ws_primary = None
+                elif source_tag == "mirror" and self.ws_mirror is ws:
+                    self.ws_mirror = None
 
             if not self.running: break
-            time.sleep(min(5.0, backoff))
-            backoff = min(5.0, backoff * 1.5)
+            if self._force_reconnect:
+                backoff = 1.0
+                time.sleep(0.05)
+            else:
+                time.sleep(min(5.0, backoff))
+                backoff = min(5.0, backoff * 1.5)
 
     def run(self):
         self._fetch_history()
@@ -1246,7 +1263,7 @@ class CandlestickOverlay(QWidget):
         painter.setOpacity(1.0)
 
         # -----------------------------------------------------------------
-        # PERFIL DE VOLUMEN DE SESIÓN (VPOC / VAH / VAL)
+        # PERFIL DE VOLUMEN DE RANGO VISIBLE (VPOC / VAH / VAL)
         # -----------------------------------------------------------------
         if self.show_profile and self.session_profile:
             max_prof_vol = max(self.session_profile.values()) if self.session_profile else 1.0
