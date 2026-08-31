@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Velas12.py -- Motor Unificado de Velas & Order Flow Ultra-Low Latency (<10ms Tape-to-Glass)
+r"""
+Velas16.py -- Motor Unificado de Velas & Order Flow Ultra-Low Latency (<10ms Tape-to-Glass)
 ========================================================================================
 Consolidación Quirúrgica Completa (Velas8 + Velas9 + Taperead10 + Velas10/11):
 
@@ -42,14 +42,13 @@ Consolidación Quirúrgica Completa (Velas8 + Velas9 + Taperead10 + Velas10/11):
   - Trazado de línea de chispa (Sparkline Path) cuando morph < 1.0.
   - Menú contextual de clic derecho (Menú desplegable) para cambio de Símbolo y Timeframe sin reiniciar.
   - Arco temporizador de cuenta regresiva de la vela en curso.
-  - Barra OBI (Order Book Imbalance) + Barra de Contexto CVD en la base del gráfico.
 
   [Módulos de Order Flow Seleccionados (Rondas 1, 2 y 3)]
-  - Footprint Charting & VDP: Micro-estructura Buy/Sell por nivel de precio dentro de la vela.
+  - Footprint Charting: Micro-estructura Buy/Sell por nivel de precio dentro de la vela.
   - Perfil de Volumen de Sesión: Cálculo dinámico de VPOC (Point of Control), VAH y VAL (70% Value Area).
   - Detector de Divergencias Delta (CVD): Identificación en tiempo real de divergencias alcistas/bajistas.
   - Panel de Open Interest (OI) & Cuadrantes: Clasificación en vivo de Long/Short Build-up/Unwinding/Covering.
-  - Detección de Absorción (Ask = #E930FF, Bid = #9D4EDD) con debounce asimétrico.
+  - Detección de Absorción (Ask = #E930FF, Bid = #9D4EDD) en tiempo real.
 ========================================================================================
 """
 
@@ -114,7 +113,7 @@ except Exception:
 # GUARD DE PLATAFORMA Y BINDINGS WIN32
 # -------------------------------------------------------------------------
 if sys.platform != "win32":
-    print("ERROR: Velas12 requiere Windows (sincronización DWM/AVRT/Waitable Timers via ctypes).")
+    print("ERROR: Velas16 requiere Windows (sincronización DWM/AVRT/Waitable Timers via ctypes).")
     sys.exit(1)
 
 gdi32 = ctypes.windll.gdi32
@@ -307,7 +306,7 @@ KE_DECAY_HALF_LIFE_S = 5.0   # vida media de decaimiento exponencial de KE, en s
 class ConfigDialog(QDialog):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Velas12 - Config Engine")
+        self.setWindowTitle("Velas16 - Config Engine")
         self.setFixedSize(320, 640)
         self.setStyleSheet("background-color: #1a1a1a; color: #eeeeee;")
         self.selection = {
@@ -316,12 +315,12 @@ class ConfigDialog(QDialog):
         }
 
         layout = QVBoxLayout()
-        
+
         lbl_sym = QLabel("TICKER SYMBOL")
         lbl_sym.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
         lbl_sym.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_sym)
-        
+
         self.sym_input = QLineEdit("BTCUSDT")
         self.sym_input.setFont(QFont("Consolas", 12))
         self.sym_input.setStyleSheet("background-color: #333; border: 1px solid #555; padding: 5px;")
@@ -332,13 +331,13 @@ class ConfigDialog(QDialog):
         lbl_style.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
         lbl_style.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_style)
-        
+
         style_layout = QVBoxLayout()
         self.radio_glow = QRadioButton("HUD Glow (Original)")
         self.radio_wireframe = QRadioButton("Wireframe (Thin)")
         self.radio_filled = QRadioButton("Filled (Solid)")
         self.radio_glow.setChecked(True)
-        
+
         self.style_group = QButtonGroup(self)
         self.style_group.addButton(self.radio_glow)
         self.style_group.addButton(self.radio_wireframe)
@@ -347,12 +346,12 @@ class ConfigDialog(QDialog):
         style_layout.addWidget(self.radio_glow)
         style_layout.addWidget(self.radio_wireframe)
         style_layout.addWidget(self.radio_filled)
-        
+
         self.check_halo = QCheckBox("Enable Contrast Halo (Shadow)")
         self.check_halo.setChecked(True)
         self.check_halo.setStyleSheet("QCheckBox { margin-top: 5px; color: #aaa; font-weight: bold; }")
         style_layout.addWidget(self.check_halo)
-        
+
         layout.addLayout(style_layout)
 
         lbl_of = QLabel("ORDER FLOW MODULES")
@@ -371,16 +370,16 @@ class ConfigDialog(QDialog):
         lbl_ticker.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
         lbl_ticker.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(lbl_ticker)
-        
+
         ticker_layout = QVBoxLayout()
         self.radio_ticker_hud = QRadioButton("Sci-Fi HUD (Advanced)")
         self.radio_ticker_classic = QRadioButton("Classic Pill (Original)")
         self.radio_ticker_hud.setChecked(True)
-        
+
         self.ticker_group = QButtonGroup(self)
         self.ticker_group.addButton(self.radio_ticker_hud)
         self.ticker_group.addButton(self.radio_ticker_classic)
-        
+
         ticker_layout.addWidget(self.radio_ticker_hud)
         ticker_layout.addWidget(self.radio_ticker_classic)
         layout.addLayout(ticker_layout)
@@ -392,12 +391,12 @@ class ConfigDialog(QDialog):
 
         mode_layout = QHBoxLayout()
         self.btn_top = QPushButton("Always on Top")
-        self.btn_bottom = QPushButton("Wallpaper")
-        
+        self.btn_bottom = QPushButton("Standard Mode")
+
         for btn in [self.btn_top, self.btn_bottom]:
             btn.setFont(QFont("Consolas", 9, QFont.Weight.Bold))
             btn.setFixedHeight(30)
-            
+
         self.btn_top.clicked.connect(lambda: self.set_mode("top"))
         self.btn_bottom.clicked.connect(lambda: self.set_mode("bottom"))
         mode_layout.addWidget(self.btn_top)
@@ -419,7 +418,7 @@ class ConfigDialog(QDialog):
         self.tf_combo.setStyleSheet("QComboBox { background-color: #333; border: 1px solid #555; padding: 5px; }")
         layout.addWidget(self.tf_combo)
 
-        btn_start = QPushButton("START VELAS12 ENGINE")
+        btn_start = QPushButton("START VELAS16 ENGINE")
         btn_start.setFont(QFont("Consolas", 11, QFont.Weight.Bold))
         btn_start.setStyleSheet("background-color: #00E676; color: #000; border: none; padding: 10px; margin-top: 10px;")
         btn_start.clicked.connect(self.start_app)
@@ -443,7 +442,7 @@ class ConfigDialog(QDialog):
         if self.radio_glow.isChecked(): self.selection["style"] = "glow"
         elif self.radio_wireframe.isChecked(): self.selection["style"] = "wireframe"
         else: self.selection["style"] = "filled"
-            
+
         self.selection["halo"] = self.check_halo.isChecked()
         self.selection["ticker_style"] = "hud" if self.radio_ticker_hud.isChecked() else "classic"
         self.selection["show_footprint"] = self.check_footprint.isChecked()
@@ -512,10 +511,10 @@ class BybitRedundantMarketDataThread(QThread):
         self.bybit_interval = BYBIT_INTERVAL_MAP.get(timeframe, "5")
         self.ring_buffer = ring_buffer
         self.running = True
-        
+
         self.ws_primary = None
         self.ws_mirror = None
-        
+
         self.reconnects = 0
         self.last_kline_ts = -1
         self.last_ticker_ts = -1
@@ -657,7 +656,7 @@ class BybitRedundantMarketDataThread(QThread):
             if not rows: return
             k = rows[0]
             start_t = int(k["start"])
-            
+
             # Sección crítica: la verificación de deduplicación y la escritura
             # física en el ring buffer deben ser atómicas entre sí, ya que
             # ambos hilos WS (primary/mirror) son escritores concurrentes.
@@ -679,7 +678,7 @@ class BybitRedundantMarketDataThread(QThread):
             last_price = data.get("lastPrice")
             open_interest = data.get("openInterest")
             if last_price is None: return
-            
+
             ts = int(msg.get("ts", 0))
             oi_val = float(open_interest) if open_interest is not None else 0.0
             with self.arbitration_lock:
@@ -708,7 +707,7 @@ class BybitRedundantMarketDataThread(QThread):
 
     def _ws_worker_loop(self, url, source_tag):
         apply_mmcss_priority()
-        
+
         backoff = 1.0
         while self.running:
             sub_msg = json.dumps({"op": "subscribe", "args": [
@@ -716,7 +715,7 @@ class BybitRedundantMarketDataThread(QThread):
                 f"tickers.{self.symbol}",
                 f"publicTrade.{self.symbol}"
             ]})
-            
+
             ws = None
             try:
                 ws = self._create_ws_connection(url)
@@ -780,7 +779,7 @@ class BybitRedundantMarketDataThread(QThread):
             target=self._ws_worker_loop,
             args=("wss://stream.bytick.com/v5/public/linear", "mirror"), daemon=True
         )
-        
+
         t_primary.start()
         t_mirror.start()
         t_primary.join()
@@ -838,26 +837,26 @@ class CandlestickOverlay(QWidget):
         self.show_footprint = config.get("show_footprint", True)
         self.show_profile = config.get("show_profile", True)
         self.local_mouse_pos = QPointF(-1000, -1000)
-        
+
         self.max_candles = 150
         self.candles = deque(maxlen=self.max_candles)
         self.ring_buffer = SPSCRingBuffer()
 
         self.setup_window()
-        
+
         self.current_opacity = 0.0
         self.target_opacity = 0.80 if self.mode == "top" else 0.95
         self.base_opacity = self.target_opacity
         self.ws_connected = False
-        
+
         self.current_morph = 1.0
         self.target_morph = 1.0
-        
+
         self.anim_c = None
         self.anim_o = self.anim_h = self.anim_l = 0.0
         self.vel_c = self.vel_h = self.vel_l = 0.0
         self.anim_time = None
-        
+
         self.kinetic_energy = 0.0
         self.last_tick_c = None
         self.last_tick_time = 0
@@ -867,11 +866,11 @@ class CandlestickOverlay(QWidget):
         self.render_min_val = float('inf')
         self.cache_is_morphed = False
         self.price_history = deque(maxlen=5)
-        
+
         self.ke_buffer = deque(maxlen=5)
         self.ke_sum = 0.0
         self.ke_smoothed = 0.0
-        
+
         # MUTACIÓN HSL IN-PLACE (ZERO-ALLOCATION)
         self.hud_text_color = QColor()
 
@@ -889,7 +888,7 @@ class CandlestickOverlay(QWidget):
         self.oi_regime = "NEUTRAL"
         self.cvd_divergence = "NONE" # BULLISH, BEARISH, NONE
         self.absorption_state = "NONE" # ASK, BID, NONE
-        
+
         self.session_profile = defaultdict(float)
         self.vpoc_price = 0.0
         self.vah_price = 0.0
@@ -927,7 +926,7 @@ class CandlestickOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
         screen = QApplication.primaryScreen().availableGeometry()
         self.setGeometry(screen)
-        
+
         if sys.platform == "win32":
             hwnd = int(self.winId())
             style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
@@ -937,14 +936,14 @@ class CandlestickOverlay(QWidget):
         self.menu = QMenu(self)
         self.menu.setStyleSheet("QMenu { background-color: #1a1a1a; color: #eeeeee; border: 1px solid #333; }"
                                 "QMenu::item:selected { background-color: #333333; }")
-        
+
         self.menu_sym = self.menu.addMenu("Symbol >")
         for sym in ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT"]:
             action = self.menu_sym.addAction(sym)
             action.triggered.connect(lambda ch, s=sym: self.change_symbol(s))
 
         self.menu_tf = self.menu.addMenu("Timeframe >")
-        for tf in ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "1d"]:
+        for tf in ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w", "1M"]:
             action = self.menu_tf.addAction(tf)
             action.triggered.connect(lambda ch, t=tf: self.change_timeframe(t))
 
@@ -976,7 +975,7 @@ class CandlestickOverlay(QWidget):
         actual_min = min(c.l for c in self.candles)
         margin = (actual_max - actual_min) * 0.10
         if margin == 0: margin = 1
-        
+
         self.render_max_val = actual_max + margin
         self.render_min_val = actual_min - margin
         self.cache_valid = False
@@ -985,7 +984,7 @@ class CandlestickOverlay(QWidget):
     def recalculate_volume_profile(self):
         if not self.show_profile or not self.candles: return
         self.session_profile.clear()
-        
+
         for c in self.candles:
             for lvl, vols in c.footprint.items():
                 self.session_profile[lvl] += (vols[0] + vols[1])
@@ -994,17 +993,17 @@ class CandlestickOverlay(QWidget):
 
         sorted_lvls = sorted(self.session_profile.items(), key=lambda x: x[1], reverse=True)
         self.vpoc_price = sorted_lvls[0][0]
-        
+
         total_vol = sum(self.session_profile.values())
         target_va_vol = total_vol * 0.70
-        
+
         va_vol_acc = 0.0
         va_levels = []
         for lvl, vol in sorted_lvls:
             va_vol_acc += vol
             va_levels.append(lvl)
             if va_vol_acc >= target_va_vol: break
-                
+
         if va_levels:
             self.vah_price = max(va_levels)
             self.val_price = min(va_levels)
@@ -1028,7 +1027,7 @@ class CandlestickOverlay(QWidget):
         for slot in slots:
             slot_type, t, o, h, l, c, v, side, extra = slot
             self.data_count += 1
-            
+
             if slot_type == 1:  # Kline completo
                 if self.last_tick_c is not None and self.last_tick_c > 0:
                     price_delta_pct = abs(c - self.last_tick_c) / self.last_tick_c * 100
@@ -1060,7 +1059,7 @@ class CandlestickOverlay(QWidget):
                 if self.last_tick_c is not None and self.last_tick_c > 0:
                     price_delta_pct = abs(price_c - self.last_tick_c) / self.last_tick_c * 100
                     self.kinetic_energy = min(1.0, self.kinetic_energy + 0.6 * min(1.0, price_delta_pct / KE_INPUT_SENSITIVITY))
-                
+
                 self.last_tick_c = price_c
                 self.last_tick_time = price_t
                 if price_t > 0:
@@ -1087,13 +1086,13 @@ class CandlestickOverlay(QWidget):
 
             elif slot_type == 3:  # Trade individual para Footprint & CVD
                 trade_price = c; trade_qty = v; trade_side = side  # 0=Buy, 1=Sell
-                
+
                 if self.candles:
                     self.candles[-1].add_trade(trade_price, trade_qty, trade_side)
-                    
+
                 delta_val = trade_qty if trade_side == 0 else -trade_qty
                 self.cum_cvd += delta_val
-                
+
                 # Absorción
                 if trade_qty > 10.0:
                     self.absorption_state = "ASK" if trade_side == 0 else "BID"
@@ -1114,7 +1113,7 @@ class CandlestickOverlay(QWidget):
 
         mouse_pos_global = QCursor.pos()
         local_mouse = self.mapFromGlobal(mouse_pos_global)
-        
+
         if self.mode == "top" and local_mouse != self.local_mouse_pos:
             self.local_mouse_pos = local_mouse
             in_evasion_zone = (-180 < local_mouse.x() < self.width() - 85 + 180 and 20 < local_mouse.y() < self.height() - 20)
@@ -1141,7 +1140,7 @@ class CandlestickOverlay(QWidget):
             current_time = time.monotonic()
             elapsed = current_time - self.last_ke_update
             self.kinetic_energy *= math.exp(-(0.693 / KE_DECAY_HALF_LIFE_S) * elapsed)
-            
+
             if len(self.ke_buffer) == self.ke_buffer.maxlen: self.ke_sum -= self.ke_buffer[0]
             self.ke_sum += self.kinetic_energy
             self.ke_buffer.append(self.kinetic_energy)
@@ -1163,11 +1162,11 @@ class CandlestickOverlay(QWidget):
 
         if abs(self.current_opacity - self.target_opacity) > 0.01:
             self.current_opacity += (self.target_opacity - self.current_opacity) * 0.25
-            
+
         if abs(self.current_morph - self.target_morph) > 0.005:
             self.current_morph += (self.target_morph - self.current_morph) * 0.15
             self.cache_valid = False
-            
+
         if self.candles:
             real_last = self.candles[-1]
             if self.anim_time != real_last.t:
@@ -1208,7 +1207,7 @@ class CandlestickOverlay(QWidget):
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             painter.setPen(QColor(0, 230, 118, 150))
             painter.setFont(QFont("Consolas", 14, QFont.Weight.Bold))
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "BOOTING VELAS12 ENGINE...")
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "BOOTING VELAS16 ENGINE...")
             painter.end()
             return
 
@@ -1216,7 +1215,7 @@ class CandlestickOverlay(QWidget):
         pad_top = 40; pad_bottom = 20; right_margin = 85
         chart_w = w - right_margin
         chart_h = h - pad_top - pad_bottom
-        
+
         price_range = self.render_max_val - self.render_min_val
         def price_to_y(p):
             if price_range == 0: return pad_top
@@ -1224,13 +1223,13 @@ class CandlestickOverlay(QWidget):
 
         cw = chart_w / self.max_candles
         start_idx = self.max_candles - n
-        
+
         if not self.cache_valid or not self.bg_cache or self.bg_cache.size() != self.size():
             self.bg_cache = QPixmap(self.size())
             self.bg_cache.fill(Qt.GlobalColor.transparent)
             cp = QPainter(self.bg_cache)
             cp.setRenderHint(QPainter.RenderHint.Antialiasing)
-            
+
             pen_grid = QPen(QColor(51, 51, 51, 150), 1, Qt.PenStyle.DashLine)
             cp.setFont(QFont("Consolas", 10))
             for j in range(5):
@@ -1257,14 +1256,14 @@ class CandlestickOverlay(QWidget):
         if self.show_profile and self.session_profile:
             max_prof_vol = max(self.session_profile.values()) if self.session_profile else 1.0
             profile_max_w = chart_w * 0.20
-            
+
             for price_lvl, vol in self.session_profile.items():
                 if self.render_min_val <= price_lvl <= self.render_max_val:
                     y_p = price_to_y(price_lvl)
                     bar_w = (vol / max_prof_vol) * profile_max_w
                     prof_rect = QRectF(0, y_p - 1, bar_w, 2)
                     painter.fillRect(prof_rect, QColor(0, 188, 212, 60))
-            
+
             if self.vpoc_price > 0:
                 vpoc_y = price_to_y(self.vpoc_price)
                 painter.setPen(QPen(QColor(255, 214, 0, 220), 2, Qt.PenStyle.SolidLine))
@@ -1287,7 +1286,7 @@ class CandlestickOverlay(QWidget):
             c = candles_list[i]
             x_center = (start_idx + i) * cw + cw / 2
             y_c = price_to_y(c.c)
-            
+
             evasion_morph = 1.0; evasion_opacity = 1.0
             if self.mode == "top":
                 radius_max = 180
@@ -1296,17 +1295,17 @@ class CandlestickOverlay(QWidget):
                     if dist < radius_max:
                         factor = max(0.0, (dist - 60) / 120)
                         evasion_morph = factor; evasion_opacity = 0.2 + 0.8 * factor
-            
+
             final_morph = self.current_morph * evasion_morph
             c_val = c.c
             y_o = price_to_y(c_val + (c.o - c_val) * final_morph)
             y_h = price_to_y(c_val + (c.h - c_val) * final_morph)
             y_l = price_to_y(c_val + (c.l - c_val) * final_morph)
-            
+
             is_bull = c.c >= c.o
             base_color = QColor(0, 230, 118) if is_bull else QColor(255, 61, 0)
             fade_factor = (0.3 + (0.7 * (i / max(1, n - 1)))) * evasion_opacity
-            
+
             if self.current_morph > 0.05:
                 candle_body_w = max(1.0, cw * 0.7)
                 top, bot = min(y_o, y_c), max(y_o, y_c)
@@ -1354,18 +1353,18 @@ class CandlestickOverlay(QWidget):
                 if self.show_footprint and c.footprint:
                     painter.setFont(QFont("Consolas", 6, QFont.Weight.Bold))
                     candle_body_w = max(1.0, cw * 0.7)
-                    
+
                     for lvl_p, vols in c.footprint.items():
                         if c.l <= lvl_p <= c.h:
                             lvl_y = price_to_y(lvl_p)
                             b_v, s_v = vols[0], vols[1]
                             imbal = b_v - s_v
-                            
+
                             # 1. Franja de color de Imbalanza (Visible siempre en todas las velas)
                             fp_color = QColor(0, 230, 118, 140) if imbal >= 0 else QColor(255, 61, 0, 140)
                             fp_rect = QRectF(x_center - candle_body_w/2, lvl_y - 2, candle_body_w, 4)
                             painter.fillRect(fp_rect, fp_color)
-                            
+
                             # 2. Texto de Números Ventas x Compras (Visible en las velas recientes)
                             # Se dibuja siempre en las últimas 15 velas vivas o si la vela mide más de 12px
                             if (i >= n - 15) or cw > 12:
@@ -1382,7 +1381,7 @@ class CandlestickOverlay(QWidget):
                 y_c = price_to_y(c.c)
                 if i == 0: spark_path.moveTo(x_c, y_c)
                 else: spark_path.lineTo(x_c, y_c)
-            
+
             cur_is_bull = candles_list[-1].c >= candles_list[-1].o
             spark_color = QColor(0, 230, 118) if cur_is_bull else QColor(255, 61, 0)
             spark_color.setAlphaF((1.0 - self.current_morph) * self.current_opacity * 0.80)
@@ -1400,14 +1399,14 @@ class CandlestickOverlay(QWidget):
         tf_w = tf_fm.horizontalAdvance(tf_text)
         dot_w = tf_fm.horizontalAdvance("● ")
         tf_h = tf_fm.height()
-        
+
         tf_x = w - tf_w - dot_w - 15; tf_y = 8
         tf_rect = QRectF(tf_x, tf_y, tf_w + dot_w + 8, tf_h + 4)
-        
+
         painter.setPen(QPen(QColor(255, 255, 255, 200), 1))
         painter.setBrush(QColor(10, 10, 10, 220))
         painter.drawRoundedRect(tf_rect, 4, 4)
-        
+
         status_color = QColor(0, 230, 118) if self.ws_connected else QColor(255, 61, 0)
         painter.setPen(status_color)
         painter.drawText(QPointF(tf_x + 4, tf_y + tf_h - 2), "●")
@@ -1442,12 +1441,12 @@ class CandlestickOverlay(QWidget):
         line_h = debug_fm.height()
         debug_h = line_h * len(debug_lines)
         debug_x = w - debug_w - 15; debug_y = tf_y + tf_h + 8
-        
+
         debug_rect = QRectF(debug_x, debug_y, debug_w + 8, debug_h + 8)
         painter.setPen(QPen(QColor(170, 170, 170, 160), 1))
         painter.setBrush(QColor(10, 10, 10, 220))
         painter.drawRoundedRect(debug_rect, 3, 3)
-        
+
         for j, line in enumerate(debug_lines):
             if "BUILD-UP" in line or "BULLISH" in line or "ASK" in line: painter.setPen(QColor(0, 230, 118))
             elif "UNWINDING" in line or "BEARISH" in line or "BID" in line or "SHORT" in line: painter.setPen(QColor(255, 61, 0))
@@ -1459,12 +1458,12 @@ class CandlestickOverlay(QWidget):
         cur_p = last_c.c
         py = price_to_y(cur_p)
         color_hex = "#00E676" if last_c.c >= last_c.o else "#FF3D00"
-        
+
         line_color = QColor(color_hex)
         line_color.setAlphaF(self.current_opacity)
         painter.setPen(QPen(line_color, 1, Qt.PenStyle.DashLine))
         painter.drawLine(QPointF(0, py), QPointF(chart_w, py))
-        
+
         # MOTION BLUR
         if len(self.price_history) >= 2:
             prev_py = price_to_y(self.price_history[-2])
@@ -1481,27 +1480,27 @@ class CandlestickOverlay(QWidget):
 
         p_str = f"{cur_p:,.2f}"
         font = QFont("Consolas", 11, QFont.Weight.Bold)
-        
+
         if self.ticker_style == "hud":
             font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.5)
             painter.setFont(font)
             fm = painter.fontMetrics()
             text_w = fm.horizontalAdvance(p_str); text_h = fm.height()
-            
+
             pad_x, pad_y = 3, 4
             pill_rect = QRectF(chart_w + 1, py - text_h/2 - pad_y/2 - 1, text_w + pad_x*2, text_h + pad_y)
-            
+
             grad = QLinearGradient(pill_rect.topLeft(), pill_rect.bottomRight())
             grad_color_start = QColor(color_hex)
             grad_color_start.setAlphaF(self.current_opacity * 0.8)
             grad.setColorAt(0.0, grad_color_start)
             grad.setColorAt(0.3, QColor(10, 10, 10, int(240 * self.current_opacity)))
             grad.setColorAt(1.0, QColor(5, 5, 5, int(250 * self.current_opacity)))
-            
+
             painter.setPen(QPen(line_color, 1))
             painter.setBrush(QBrush(grad))
             painter.drawRoundedRect(pill_rect, 3, 3)
-            
+
             # MUTACIÓN HSL IN-PLACE (ZERO-ALLOCATION)
             rng = max(0.0001, last_c.h - last_c.l)
             skew_ratio = abs(last_c.c - last_c.o) / rng
@@ -1513,7 +1512,7 @@ class CandlestickOverlay(QWidget):
             sat = activation
             lig = 1.0 - (0.25 * activation)
             self.hud_text_color.setHslF(hue, sat, lig, 1.0)
-            
+
             painter.setPen(self.hud_text_color)
             painter.drawText(QPointF(chart_w + 1 + pad_x, py + text_h/3), p_str)
         else:
@@ -1537,7 +1536,7 @@ class CandlestickOverlay(QWidget):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QApplication(sys.argv)
-    
+
     dialog = ConfigDialog()
     if dialog.exec() == QDialog.DialogCode.Accepted:
         overlay = CandlestickOverlay(dialog.selection)
