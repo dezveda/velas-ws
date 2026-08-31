@@ -53,21 +53,6 @@ An ultra-low latency (<10ms Tape-to-Glass) unified candlestick & Order Flow rend
 
 ---
 
-## Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Dez/Dezvelas.git
-   cd Dezvelas
-   ```
-
-2. **Install required packages**:
-   ```bash
-   pip install PyQt6 websocket-client orjson
-   ```
-
----
-
 ## Usage
 
 Launch the engine by running `Velas16.py`:
