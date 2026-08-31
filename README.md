@@ -1,52 +1,49 @@
-# VELAS-ws (Velas Engine v16)
+<div align="center">
 
-An ultra-low latency unified candlestick & Order Flow rendering engine built in Python with PyQt6 and Win32 system optimizations.
+# ⚡ VELAS-ws (Velas Engine v16)
 
----
+**Ultra-Low Latency Candlestick & Order Flow Visualization Engine**
 
-## Overview
-
-**VELAS-ws** is a high-performance, real-time market data visualizer and Order Flow visualization overlay for Bybit Linear Perps. Designed for low latency tape-to-glass rendering, it combines sub-millisecond OS timer resolution, DWM VBlank-synchronized pacing, redundant dual WebSocket feeds with dynamic leader/standby race arbitration, and advanced order flow analytics including Footprint charts, Visible Range Volume Profiles, Delta Divergences, Open Interest dynamics, and Absorption detection.
+*Built for Bybit Linear Perps with Python, PyQt6, and native Win32 kernel/hardware synchronization.*
 
 ---
 
-## Installation & Setup
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Python Version](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows)
+[![Framework](https://img.shields.io/badge/GUI-PyQt6-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://www.qt.io/)
+[![GitHub Stars](https://img.shields.io/github/stars/dezveda/velas-ws?style=for-the-badge&color=gold)](https://github.com/dezveda/velas-ws/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/dezveda/velas-ws?style=for-the-badge&color=orange)](https://github.com/dezveda/velas-ws/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/dezveda/velas-ws?style=for-the-badge&color=red)](https://github.com/dezveda/velas-ws/issues)
 
-Clone the repository and enter the directory:
+[ Overview ](#-overview) • [ Key Features ](#-key-features) • [ Tech Stack ](#-tech-stack--requirements) • [ Installation ](#-installation--setup) • [ Usage ](#-usage) • [ License ](#-license)
 
-```bash
-git clone https://github.com/dezveda/velas-ws.git
-cd velas-ws
-```
-
----
-
-## Requirements
-
-- **Operating System**: Windows (10 or 11 required for Win32 AVRT, DWM, and high-precision timer APIs).
-- **Python**: Python 3.9 or higher (64-bit recommended).
-
-### Dependencies
-- `PyQt6`
-- `websocket-client`
-- `orjson` *(optional, but recommended for ~3-5x faster JSON parsing)*
-
-Install dependencies via pip:
-
-```bash
-pip install PyQt6 websocket-client orjson
-```
-
-### Diagnostic Logging
-Runtime telemetry and diagnostic events are automatically recorded to a persistent rotating log file at `%LOCALAPPDATA%\Taperead\diag.log` (1 MB max, 3 backups).
+</div>
 
 ---
 
-## Key Features
+> [!NOTE]
+> **VELAS-ws** is engineered for high-frequency order flow analysis and ultra-fast tape-to-glass visual execution, utilizing sub-millisecond Windows OS timers and direct DWM VBlank synchronization.
+
+---
+
+## 📖 Overview
+
+**VELAS-ws** is a high-performance, real-time market data visualizer and Order Flow overlay for Bybit Linear Perps. Designed specifically for low latency tape-to-glass rendering, it combines sub-millisecond OS timer resolution, DWM VBlank-synchronized pacing, redundant dual WebSocket feeds with dynamic leader/standby race arbitration, and advanced order flow analytics including:
+
+- 📊 **Footprint Charts** (Micro-structure buy/sell volume)
+- 📈 **Visible Range Volume Profiles** (VPOC, VAH, VAL)
+- ⚡ **Delta Divergences & CVD**
+- 🔄 **Open Interest Dynamics**
+- 🛡️ **Flash Absorption Detection**
+
+---
+
+## 🚀 Key Features
 
 ### ⚡ Ultra-Low Latency Core & Win32 Platform Tuning
-- **Sub-millisecond OS Timers**: Adjusts Windows system timer resolution to 0.5ms via `NtSetTimerResolution`, combined with `timeBeginPeriod(1)` for layered timer precision.
-- **Thread & Process Prioritization**: Sets process priority to `HIGH_PRIORITY_CLASS` (0x80) and utilizes Win32 MMCSS (`Pro Audio`) thread scheduling for pacing and WebSocket threads.
+- **Sub-Millisecond OS Timers**: Adjusts Windows system timer resolution to 0.5ms via `NtSetTimerResolution`, combined with `timeBeginPeriod(1)` for layered timer precision.
+- **Thread & Process Prioritization**: Sets process priority to `HIGH_PRIORITY_CLASS` (`0x80`) and utilizes Win32 MMCSS (`Pro Audio`) thread scheduling for pacing and WebSocket threads.
 - **VSync-Synchronized Pacing**: True VBlank synchronization via `VSyncPacer` -> `DwmFlush` avoiding software timer jitter.
 - **CPython Switch Interval & GC Management**: Disables standard Garbage Collection during active trading, utilizing tactical collections during quiet market periods; switch interval tuned to 1ms to prevent tape-to-glass stalls.
 - **Optimized Binary Ring Buffer**: Binary MPSC Ring Buffer with 64-byte slots for ultra-fast event ingestion.
@@ -73,7 +70,41 @@ Runtime telemetry and diagnostic events are automatically recorded to a persiste
 
 ---
 
-## Usage
+## 🛠️ Tech Stack & Requirements
+
+| Component | Technology / Requirement | Description |
+| :--- | :--- | :--- |
+| **Language** | Python 3.9+ (64-bit) | Core execution engine |
+| **OS Support** | Windows 10 / 11 | Required for Win32 AVRT, DWM VBlank, NtSetTimerResolution |
+| **GUI Framework** | PyQt6 | Hardware-accelerated Qt widgets and QPainter rendering |
+| **Networking** | websocket-client | Low-latency dual WS feed connection |
+| **JSON Parser** | `orjson` | High-speed C-extension JSON parsing (~3-5x speedup) |
+
+---
+
+## 📦 Installation & Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/dezveda/velas-ws.git
+   cd velas-ws
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pip install PyQt6 websocket-client orjson
+   ```
+
+> [!TIP]
+> `orjson` is highly recommended as it speeds up JSON payload parsing by 3x-5x, reducing event loop processing latency.
+
+### 📝 Diagnostic Logging
+Runtime telemetry and diagnostic events are automatically recorded to a persistent rotating log file at:
+`%LOCALAPPDATA%\Taperead\diag.log` (1 MB max, 3 backups).
+
+---
+
+## 🎮 Usage
 
 Launch the engine by running `Velas16.py`:
 
@@ -81,8 +112,9 @@ Launch the engine by running `Velas16.py`:
 python Velas16.py
 ```
 
-### Configuration Dialog
-Upon launch, a settings dialog will appear allowing you to customize:
+### ⚙️ Configuration Dialog
+Upon launch, a settings dialog allows you to customize runtime behavior:
+
 - **Ticker Symbol**: Default `BTCUSDT`.
 - **Candle Style**: HUD Glow, Wireframe, or Filled.
 - **Order Flow Modules**: Toggle Footprint levels and Visible Range Volume Profile.
@@ -90,12 +122,12 @@ Upon launch, a settings dialog will appear allowing you to customize:
 - **Z-Order Mode**: Always on Top or Standard Mode.
 - **Timeframe**: Select from `1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `12h`, `1d`, `1w`, or `1M`.
 
-### Controls
-- **Right Click**: Opens the context menu to quickly change symbols or timeframes (`1m` to `1M`) on the fly.
-- **Cursor Proximity Tracking**: Interactive evasion zone morphs rendering elements around the mouse cursor when running in Always on Top mode.
+### 🖱️ Interactive Controls
+- **Right Click**: Opens the context menu to quickly change symbols or timeframes on the fly without interrupting WebSocket synchronization.
+- **Cursor Proximity Tracking**: Interactive evasion zone morphs rendering elements around the mouse cursor when running in Always-on-Top mode.
 
 ---
 
-## License
+## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
