@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""
-Velas16.py -- Motor Unificado de Velas & Order Flow Ultra-Low Latency (<10ms Tape-to-Glass)
+Velas16.py -- Motor Unificado de Velas & Order Flow Ultra-Low Latency
 ========================================================================================
 Consolidación Quirúrgica Completa (Velas8 + Velas9 + Taperead10 + Velas10/11):
 
@@ -17,19 +17,14 @@ Consolidación Quirúrgica Completa (Velas8 + Velas9 + Taperead10 + Velas10/11):
 
   [Arquitectura de Red Redundante]
   - Doble hilo WebSocket (Bybit Primario + Bytick Espejo) multiplexado.
-  - Arbitraje por carrera para Kline, Ticker, Trade y Orderbook (OFI/CTS),
-    serializado por un único arbitration_lock (Nota: es un mutex, no una
-    técnica lock-free; el nombre de la clase de buffer que sigue es
-    heredado y también impreciso -- ver nota bajo su definición).
+  - Arbitraje por carrera para Kline, Ticker y Trade,
+    serializado por un único arbitration_lock.
   - Degradación dinámica líder/standby: en régimen estacionario, tras un
     EWMA de victorias sostenido, el feed rezagado deja de parsear y
     despachar los tópicos de datos (su socket sigue vivo para ping/pong
     de salud), reduciendo a la mitad la contención sobre arbitration_lock.
     Reactivación instantánea ante staleness del líder o reconexión.
-  - Ring Buffer binario de 64 bytes por slot (SPSCRingBuffer -- el nombre
-    es heredado de una versión anterior de un solo productor; hoy recibe
-    escrituras desde dos hilos productores reales, primary y mirror, y es
-    por tanto MPSC en la práctica, no SPSC).
+  - Ring Buffer binario de 64 bytes por slot (MPSCRingBuffer).
   - RTT Ratchet Baseline Offset con guardias contra saltos de reloj de pared.
 
   [Motor Físico y Visualización (Velas8/Velas9)]
@@ -48,7 +43,7 @@ Consolidación Quirúrgica Completa (Velas8 + Velas9 + Taperead10 + Velas10/11):
   - Perfil de Volumen de Sesión: Cálculo dinámico de VPOC (Point of Control), VAH y VAL (70% Value Area).
   - Detector de Divergencias Delta (CVD): Identificación en tiempo real de divergencias alcistas/bajistas.
   - Panel de Open Interest (OI) & Cuadrantes: Clasificación en vivo de Long/Short Build-up/Unwinding/Covering.
-  - Detección de Absorción (Ask = #E930FF, Bid = #9D4EDD) en tiempo real.
+  - Detección de Absorción: indicador de absorción en panel de telemetría para trades superiores al umbral (10.0 unidades).
 ========================================================================================
 """
 
@@ -196,7 +191,7 @@ def get_precise_time_ms():
     return time.time() * 1000.0
 
 # -------------------------------------------------------------------------
-# SPSC RING BUFFER LOCK-FREE PARA DATOS Y TRADES
+# MPSC RING BUFFER PARA DATOS Y TRADES
 # -------------------------------------------------------------------------
 SLOT_SIZE = 64             # bytes por slot
 RB_SLOTS = 8192            # capacidad de slots
@@ -204,7 +199,7 @@ RB_MASK = RB_SLOTS - 1
 # Layout: type(B), t(q), o(d), h(d), l(d), c(d), v(d), side(b), extra(d)
 RB_FMT = "<Bqdddddbd"
 
-class SPSCRingBuffer:
+class MPSCRingBuffer:
     __slots__ = ('buf', 'head', 'tail', 'dropped')
     def __init__(self):
         self.buf = bytearray(SLOT_SIZE * RB_SLOTS)
@@ -840,7 +835,7 @@ class CandlestickOverlay(QWidget):
 
         self.max_candles = 150
         self.candles = deque(maxlen=self.max_candles)
-        self.ring_buffer = SPSCRingBuffer()
+        self.ring_buffer = MPSCRingBuffer()
 
         self.setup_window()
 
